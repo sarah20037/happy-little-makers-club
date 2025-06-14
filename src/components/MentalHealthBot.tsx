@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -6,7 +5,7 @@ import QuickStartPrompts from './QuickStartPrompts';
 import { Card } from '@/components/ui/card';
 import { Sparkles, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -53,6 +52,11 @@ const MentalHealthBot: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error('Supabase not configured');
+      }
+
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('chat-completion', {
         body: { message: messageText }
@@ -83,9 +87,13 @@ const MentalHealthBot: React.FC = () => {
 
       setMessages(prev => [...prev, fallbackMessage]);
       
+      const errorMessage = !isSupabaseConfigured 
+        ? "Supabase connection not configured. Please connect to Supabase to enable AI responses."
+        : "Unable to connect to AI service. Using fallback response.";
+      
       toast({
         title: "Connection Issue",
-        description: "Unable to connect to AI service. Using fallback response.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
